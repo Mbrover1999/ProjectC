@@ -49,12 +49,6 @@ cmake_ninja_workdir = /Users/michaelbrover/CLionProjects/final/cmake-build-debug
 
 build cmake_object_order_depends_target_final: phony || CMakeFiles/final.dir
 
-build CMakeFiles/final.dir/main.c.o: C_COMPILER__final_unscanned_Debug /Users/michaelbrover/CLionProjects/final/main.c || cmake_object_order_depends_target_final
-  DEP_FILE = CMakeFiles/final.dir/main.c.o.d
-  FLAGS = -g -std=gnu90 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk -mmacosx-version-min=14.2 -fcolor-diagnostics
-  OBJECT_DIR = CMakeFiles/final.dir
-  OBJECT_FILE_DIR = CMakeFiles/final.dir
-
 build CMakeFiles/final.dir/preproc.c.o: C_COMPILER__final_unscanned_Debug /Users/michaelbrover/CLionProjects/final/preproc.c || cmake_object_order_depends_target_final
   DEP_FILE = CMakeFiles/final.dir/preproc.c.o.d
   FLAGS = -g -std=gnu90 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk -mmacosx-version-min=14.2 -fcolor-diagnostics
@@ -105,7 +99,7 @@ build CMakeFiles/final.dir/assembler.c.o: C_COMPILER__final_unscanned_Debug /Use
 #############################################
 # Link the executable final
 
-build final: C_EXECUTABLE_LINKER__final_Debug CMakeFiles/final.dir/main.c.o CMakeFiles/final.dir/preproc.c.o CMakeFiles/final.dir/front.c.o CMakeFiles/final.dir/firstPass.c.o CMakeFiles/final.dir/CodCovert.c.o CMakeFiles/final.dir/dataTable.c.o CMakeFiles/final.dir/secondPass.c.o CMakeFiles/final.dir/assembler.c.o
+build final: C_EXECUTABLE_LINKER__final_Debug CMakeFiles/final.dir/preproc.c.o CMakeFiles/final.dir/front.c.o CMakeFiles/final.dir/firstPass.c.o CMakeFiles/final.dir/CodCovert.c.o CMakeFiles/final.dir/dataTable.c.o CMakeFiles/final.dir/secondPass.c.o CMakeFiles/final.dir/assembler.c.o
   FLAGS = -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.5.sdk -mmacosx-version-min=14.2
   OBJECT_DIR = CMakeFiles/final.dir
   POST_BUILD = :

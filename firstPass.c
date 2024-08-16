@@ -2,47 +2,46 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-
-#include "../final/dataTable.c"
-#include "../final/front.c"
-#include "../final/CodCovert.c"
-#include "../final/secondPass.c"
+#include "Headers/firstPass.h"
+#include "Headers/dataTable.h"
+#include "Headers/front.h"
+#include "Headers/CodCovert.h"
+#include "Headers/secondPass.h"
 
 
 
 int handle_allocation(other_table **externs, other_table **entries, code_conv **code, code_conv **data) {
     int error_found = 0;
 
-    /* Allocate memory for 'extern' using the size of 'other_table' */
     *externs = handle_malloc(sizeof(other_table));
     if (*externs == NULL) {
         error_found = 1;
+        printf("Error - failed to allocate memory for externs\n");
         return error_found;
     }
 
-    /* Allocate memory for 'entries' using the size of 'other_table' */
     *entries = handle_malloc(sizeof(other_table));
     if (*entries == NULL) {
         error_found = 1;
+        printf("Error - failed to allocate memory for entries\n");
         return error_found;
     }
 
-    /* Allocate memory for 'code' using the size of 'code_conv' */
     *code = handle_malloc(sizeof(code_conv));
     if (*code == NULL) {
         error_found = 1;
+        printf("Error - failed to allocate memory for code\n");
         return error_found;
     }
 
-    /* Allocate memory for 'data' using the size of 'code_conv' */
     *data = handle_malloc(sizeof(code_conv));
     if (*code == NULL) {
         error_found = 1;
+        printf("Error - failed to allocate memory for data\n");
         return error_found;
     }
 
-    /* If the program gets to this point, then all memory allocations were successful. */
+    /* If the program gets to this point, then all memory allocations were successful.*/
     /* Return the error flag (should be 0 at this point). */
     return error_found;
 }
@@ -52,7 +51,6 @@ int handle_allocation(other_table **externs, other_table **entries, code_conv **
 int exe_first_pass(char *file_name) {
     int error_code, IC, DC, error_found, label_table_line, externs_count, entries_count, inst_created = 1;
 
-    /* Declare pointers to different data types */
     code_conv *code, *data;
     other_table *externs;
     other_table *entries;
@@ -63,14 +61,11 @@ int exe_first_pass(char *file_name) {
     char str_copy[MAX_LINE_LENGTH];
 
 
-    /* Declare a file pointer */
     FILE *fp;
     label_address *label_table;
 
-    /* Initialize the error codes */
     error_code = error_found = 0;
 
-    /* Check if any line in the file exceeds the maximum length */
     if (lines_too_long(file_name)) {
         error_found = 1;
     }
@@ -89,7 +84,7 @@ int exe_first_pass(char *file_name) {
     /* Handle the memory allocation for externs, entries, code, and data */
     error_found = handle_allocation(&externs, &entries, &code, &data);
 
-    /* Start reading the file line by line until end of file or maximum instruction count */
+    /* Start reading the file line by line */
     while (fgets(str, MAX_LINE_LENGTH, fp) != NULL && IC + DC <= IC_MAX - IC_INIT_VALUE) {
         error_code = 0;
         (am_file.line_num)++;
@@ -98,13 +93,10 @@ int exe_first_pass(char *file_name) {
         }
 
         if (strchr(str, '.')) {
-            /*Copy the str*/
+            /*Copy the str */
             strcpy(str_copy, str);
             if (strstr(str_copy, ".entry") || strstr(str_copy, ".extern")) {
                 inst = read_entry_or_extern(str_copy, &error_code);
-                /*If the 'nums' member of the 'inst' structure is NULL, it means the line does not contain any numbers.
-                It's either an .extern or .entry directive.
-                not a .extern line --> is a .entry line */
                 if (inst->is_extern == 0)
                     insert_other_labels(&entries, ++entries_count, inst, am_file, &error_code);
 
@@ -120,30 +112,27 @@ int exe_first_pass(char *file_name) {
                     insert_label_table(&label_table, ++label_table_line, inst->label, DC, am_file, 1, &error_code);
                 }
             } else {
-                /*Illegal data line directive - must be .data or .string or .extern or . entry */
+                printf("Error - Illegal data line directive - must be .data or .string or .extern or . entry\n");
                 inst_created = 0;
                 error_code =-1;
             }
 
             if (error_code != 0) {
-                printf("Error");
+                printf("Error - in first pass.\n");
                 if (inst_created)
                     free(inst);
                 error_found = 1;
                 continue;
             } else {
-                /* is not .entry nor .extern --> is .data or .string
-                /ry to add the data/string to the 'data' machine code.
-                If the addition fails (function returns 0), free the 'nums' member and the 'inst' structure,
-                set the error flag, and continue to the next line.*/
+
                 if (inst_created) {
                     if (add_machine_code_data(&data, inst, &DC, am_file) == 0) {
+                        printf("Error - is not .entry nor .extern --> is .data or .string\n");
                         error_found = 1;
                         continue;
                     }
                 }
             }
-            /* Free the 'nums' member and the 'inst' structure before processing the next line. */
             if (inst_created) {
                 if (inst->nums)
                     free(inst->nums);
@@ -151,13 +140,6 @@ int exe_first_pass(char *file_name) {
             }
         } else {
             command = read_command(str, &error_code);
-            /*If the 'label' member of the 'command' structure is not NULL, insert the label into the 'label_table'.*/
-
-            /*
-            If the command is parsed successfully (error_code is 0), increment the instruction counter.
-
-            If the 'label' member of the 'command' structure is not NULL, insert the label into the 'label_table'.
-            */
             if (error_code == 0) {
                 IC++;
                 if (command != NULL && command->label != NULL) {
@@ -175,8 +157,7 @@ int exe_first_pass(char *file_name) {
                 error_found = 1;
                 continue;
             }
-            /*Attempt to add the additional machine code lines related to the command into the 'code' structure.
-            If the function fails for either of the additions (returns 0), free the 'command' structure, set the error flag, and continue to the next line.*/
+            /*Try to add the additional machine code lines*/
             if (add_extra_machine_code_line(&code, command, &IC, 1, am_file) == 0 || \
             add_extra_machine_code_line(&code, command, &IC, 0, am_file) == 0) {
                 free(command);
@@ -195,7 +176,7 @@ int exe_first_pass(char *file_name) {
 
     fclose(fp);
 
-/* Return the error status */
+
     return
             error_found;
 }

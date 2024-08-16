@@ -3,7 +3,7 @@ project(final C)
 
 set(CMAKE_C_STANDARD 90)
 
-add_executable(final main.c
+add_executable(final
         preproc.c
         front.c
         front.c
@@ -12,4 +12,5 @@ add_executable(final main.c
         dataTable.c
         secondPass.c
         assembler.c
+        Headers/firstPass.h
 )

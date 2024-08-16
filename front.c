@@ -2,49 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Headers/front.h"
 
 
-#define MAX_LABEL_LENGTH 31
-#define MAX_LINE_LENGTH 81
-#define BIG_NUMBER_CONST 100
-#define OPCODES_COUNT 16
-#define REG_COUNT 8
-#define WORD_LEN 12
-#define INSTRUCTIONS_COUNT 4
-#define MAX_NUM ((1 << (WORD_LEN-1)) - 1)
-#define MIN_NUM (-(1 << (WORD_LEN-1)))
 
-typedef struct location {
-    char *file_name;
-    int line_num;
-} location;
-
-
-typedef struct op_code {
-    char *opcode;
-    int arg_num;
-} op_code;
-
-/* Represents different parts of a command */
-typedef struct command_parts {
-    char *label;
-    int opcode;
-    char *source;
-    char *dest;
-    int are;
-} command_parts;
-
-/* Represents different parts of a data line */
-typedef struct inst_parts {
-    char *label;
-    short *nums;
-    int len;
-    char *arg_label;
-    int is_extern;
-} inst_parts;
-
-
-/* Define the opcodes */
 op_code OPCODES[] = {
         {"mov",  2},
         {"cmp",  2},
@@ -63,20 +24,11 @@ op_code OPCODES[] = {
         {"rts",  0},
         {"stop", 0}
 };
-/* Define the registers */
+
 char *REGS[] = {"@r0", "@r1", "@r2", "@r3", "@r4", "@r5", "@r6", "@r7"};
 
-/* Define the instructions */
 char *INSTUCTIONS[] = {".data", ".string", ".extern", ".entry"};
 
-
-void *handle_malloc(long object_size) {
-    void *object_ptr = malloc(object_size);
-    if (object_ptr == NULL) {
-        printf("Error");
-    }
-    return object_ptr;
-}
 
 
 int lines_too_long(char *file_name) {
@@ -85,19 +37,19 @@ int lines_too_long(char *file_name) {
     location am_file;
     int too_long;
 
-    /* Open the file for reading */
+    /* Prepare the file for reading */
     fp = fopen(file_name, "r");
     am_file.file_name = file_name;
     too_long = 0;
 
-    /* Read lines from the file and check their lengths */
+    /* Read lines from the file and check lengths */
     while (fgets(str, BIG_NUMBER_CONST, fp) != NULL) {
         if (strlen(str) > MAX_LINE_LENGTH) {
         (am_file.line_num)++;
 
-            /* Line is too long */
-            printf("line is too long - ERROR");
-            too_long = 1; /* Set the flag to indicate a line is too long */
+
+            printf("Error - line is too long\n");
+            too_long = 1;
         }
     }
     fclose(fp);
@@ -108,7 +60,6 @@ int lines_too_long(char *file_name) {
 int is_instr(char *str) {
     int i;
 
-    /* Return 0 if the string is NULL */
     if (str == NULL) {
         return 0;
     }
@@ -116,46 +67,45 @@ int is_instr(char *str) {
     /* Iterate through the list of known instructions and compare the string with each instruction in the list */
     for (i = 0; i < INSTRUCTIONS_COUNT; i++) {
         if (strcmp(str, INSTUCTIONS[i]) == 0) {
-            return 1; /* Return 1 if the string matches an instruction */
+            return 1;
         }
     }
-    return 0; /* Return 0 if the string is not a valid instruction */
+    return 0;
 }
 
 
 int what_opcode(char *str) {
     int i;
 
-    /* Return -1 if the string is NULL */
+
     if (str == NULL) {
         return -1;
     }
 
-    /* Iterate through the list of known opcodes and compare the string with each opcode in the list */
+
     for (i = 0; i < OPCODES_COUNT; i++) {
         if (strcmp(str, OPCODES[i].opcode) == 0) {
             return i; /* Return the index of the matching opcode */
         }
     }
-    return -1; /* Return -1 if the string does not match any known opcodes */
+    return -1;
 }
 
 
 int what_reg(char *str) {
     int i;
 
-    /* Return -1 if the string is NULL */
+
     if (str == NULL) {
         return -1;
     }
 
-    /* Iterate through the list of known registers and compare the string with each register in the list */
     for (i = 0; i < REG_COUNT; i++) {
         if (strcmp(str, REGS[i]) == 0) {
             return i; /* Return the index of the matching register */
         }
     }
-    return -1; /* Return -1 if the string does not match any known registers */
+    return -1;
 }
 
 
@@ -164,9 +114,10 @@ int legal_label_decl(char *str, int *error_code) {
         return 0;
     }
 
-    /* If str is in one of the following - the label name is not valid */
+    /* Checks if the label is one of the following checks, print an error if it's true */
     if (strlen(str) > MAX_LABEL_LENGTH || !isalpha(*str) || what_reg(str) >= 0) {
-        *error_code = -1; /* Illegal label declaration */
+        printf("Error - Illegal label declaration\n");
+        *error_code = -1;
         return 0;
     }
 
@@ -177,6 +128,7 @@ int legal_label_decl(char *str, int *error_code) {
             *str = '\0';
             return 1;
         } else {
+            printf("Error - Illegal label declaration\n");
             *error_code = -1; /* Illegal label declaration */
         }
     }
@@ -190,17 +142,17 @@ int legal_label(char *str) {
         return 0;
     }
 
-    /* If str is in one of the following - the label name is not valid */
+    /* Checks if the label is one of the following checks, print an error if it's true */
     if (isalpha(*str) && strlen(str) <= MAX_LABEL_LENGTH && (what_opcode(str) < 0) && \
         !is_instr(str)) {
         while (*(++str) != '\0' && *(str) != ' ' && (isalpha(*str) || isdigit(*str))) { ;
         }
     }
-    /* If we reached this point and the string either terminates or we have a space
-     * then it means that all the characters were legal and the label is legal */
+
     if (*str == '\0' || *str == ' ') {
         return 1;
     } else {
+        printf("Error - Illegal label declaration\n");
         return 0;
     }
 }
@@ -209,7 +161,7 @@ int extra_text() {
     char *token;
     token = strtok(NULL, "\n");
 
-    /* If a token exists beyond the expected content, there is extra text */
+    /* Check if token exists, if yes - extra text found */
     if (token != NULL) {
         return 1;
     }
@@ -217,8 +169,7 @@ int extra_text() {
 }
 
 int is_reg_or_label(char *str) {
-    /* Check if the string is a valid register using what_reg()
-     * OR if it's a legal label using legal_label() */
+
     if ((what_reg(str) >= 0) || legal_label(str)) {
         return 1;
     }
@@ -228,20 +179,19 @@ int is_reg_or_label(char *str) {
 int is_num(char *str) {
     char *ptr;
 
-    /* Check if the string is not NULL */
+
     if (str != NULL) {
         strtol(str, &ptr, 10);
 
         /* Check if the conversion result is followed by a space or the entire string is converted */
         if (*ptr == '\0' || *ptr == ' ') {
-            return 1; /* The string represents a numeric value */
+            return 1;
         }
     }
-    return 0; /* The string does not represent a numeric value */
+    return 0;
 }
 
 int is_reg_or_label_or_num(char *str) {
-    /* Check if the string is a valid register or label, and if it's a valid number */
     return (is_reg_or_label(str) || is_num(str));
 }
 
@@ -254,7 +204,6 @@ int check_first_arg(char *str, char *ptr) {
     strncpy(first_arg, str, first_arg_len);
     first_arg[first_arg_len] = '\0';
 
-    /* Check if the extracted first argument is a valid register, label, or number */
     return is_reg_or_label_or_num(first_arg);
 }
 
@@ -264,7 +213,6 @@ int count_occurr(char *str, char ch) {
     ptr = str;
     count = 0;
 
-    /* Traverse the string until the end or until no more occurrences are found */
     while ((*ptr != '\0') && (ptr = strchr(ptr, ch)) != NULL) {
         count++;
         ptr++;
@@ -290,19 +238,24 @@ void check_reg_error(int *error_code, char *str) {
         return;
 
     /* Check if any previous error has already occurred */
-    if (has_white_space(str))
+    if (has_white_space(str)) {
+        printf("Error - has white space!\n");
         *error_code = -1;
+    }
     else if (atoi(strtok(temp_str1, "@r"))) {
-        *error_code = -1; /* Illegal register name */
-    } else
-        *error_code = -1; /* Illegal argument */
+        printf("Error - illegal register name\n");
+        *error_code = -1;
+    } else {
+        printf("Error - illegal argument\n");
+        *error_code = -1;
+    }
 }
 
 
 int legal_arg(char *str, command_parts *command, int *error_code) {
     char *str1, *str2, *ptr;
 
-    /* Check if the argument is empty */
+
     if (str == NULL && OPCODES[command->opcode].arg_num != 0) {
         *error_code = -1;
         return 0;
@@ -319,40 +272,45 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
         }
     }
 
-    /* Handle cases where the command has two arguments */
+    /*  Check and handle cases where the command has two arguments */
     if (OPCODES[command->opcode].arg_num == 2) {
         if (strstr(str, ",") == NULL) {
-            *error_code = -1; /* Missing comma between arguments */
+            printf("Error - missing comma between arguments\n");
+            *error_code = -1;
             return 0;
         } else if (count_occurr(str, ',') > 1) {
-            *error_code = -1; /* Extra commas between arguments */
+            printf("Error - extra commas between arguments\n");
+            *error_code = -1;
             return 0;
         } else {
             str1 = strtok(str, ",");
             if ((ptr = strchr(str1, ' '))) {
                 if (check_first_arg(str1, ptr)) {
-                    *error_code = -1; /* Invalid first argument format */
+                    printf("Error - invalid first argument format\n");
+                    *error_code = -1;
                     return 0;
                 }
-                *error_code = -1; /* Other argument-related error */
+                printf("Error - argument-related error\n");
+                *error_code = -1;
                 return 0;
             }
             str2 = strtok(NULL, " \n");
             if (extra_text()) {
-                *error_code = -1; /* Extra text after arguments */
+                printf("Error - extra text after arguments\n");
+                *error_code = -1;
                 return 0;
             }
         }
     }
-    /* Handle cases where the command has one argument */
     else if (OPCODES[command->opcode].arg_num == 1) {
         if (strchr(str, ' ')) {
-            *error_code = -1; /* Extra text after argument */
+            printf("Error - extra text after arguments\n");
+            *error_code = -1;
             return 0;
         }
     }
 
-    /* Validate and process the argument based on the opcode */
+    /* Validate and process the argument based on the opcode*/
     switch (command->opcode) {
         case 0:
         {
@@ -360,12 +318,18 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = str1;
                 command->dest = str2;
             } else {
-                if (str2 == NULL)
-                    *error_code = -1; /* Missing argument */
-                else if (what_reg(str1) == -1 || what_reg(str2) == -1)
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (str2 == NULL){
+                    printf("Error - missing argument\n");
+                    *error_code = -1;
+                    }
+                else if (what_reg(str1) == -1 || what_reg(str2) == -1) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -375,12 +339,18 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = str1;
                 command->dest = str2;
             } else {
-                if (str2 == NULL)
-                    *error_code = -1; /* Missing argument */
-                else if (what_reg(str1) == -1 || what_reg(str2) == -1)
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (str2 == NULL) {
+                    printf("Error - missing argument\n");
+                    *error_code = -1;
+                }
+                else if (what_reg(str1) == -1 || what_reg(str2) == -1) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -392,12 +362,18 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = str1;
                 command->dest = str2;
             } else {
-                if (str2 == NULL)
-                    *error_code = -1; /* Missing argument */
-                else if (what_reg(str1) == -1 || what_reg(str2) == -1)
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (str2 == NULL) {
+                    printf("Error - missing argument\n");
+                    *error_code = -1;
+                }
+                else if (what_reg(str1) == -1 || what_reg(str2) == -1) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -414,13 +390,13 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
             }
             break;
         }
-
-        /* source addressing code is 3 and dest addressing code is 3,5 */
+            /* dest addressing code is 3,5 and has source */
         case 6: {
             if (legal_label(str1) && is_reg_or_label(str2)) {
                 command->source = str1;
                 command->dest = str2;
             } else {
+                printf("Error - illegal argument\n");
                 *error_code = -1; /* Illegal argument */
                 return 0;
             }
@@ -433,13 +409,20 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
             if (is_reg_or_label_or_num(str1) && is_reg_or_label_or_num(str2)) {
                 command->source = str1;
                 command->dest = str2;
+
             } else {
-                if (str2 == NULL)
-                    *error_code = -1; /* Missing argument */
-                else if (what_reg(str1) == -1 || what_reg(str2) == -1)
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (str2 == NULL) {
+                    printf("Error - missing argument\n");
+                    *error_code = -1;
+                }
+                else if (what_reg(str1) == -1 || what_reg(str2) == -1) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -450,10 +433,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -464,10 +451,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -478,10 +469,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -492,10 +487,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -506,10 +505,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -520,10 +523,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -533,10 +540,14 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
                 command->source = NULL;
                 command->dest = str;
             } else {
-                if (atoi(strtok(str, "@r")))
-                    *error_code = -1; /* Illegal register name */
-                else
-                    *error_code = -1; /* Illegal argument */
+                if (atoi(strtok(str, "@r"))) {
+                    printf("Error - illegal register name\n");
+                    *error_code = -1;
+                }
+                else {
+                    printf("Error - illegal argument\n");
+                    *error_code = -1;
+                }
                 return 0;
             }
             break;
@@ -555,7 +566,8 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
         }
         /* case 14,15 are dealt with in previous stage */
         default: {
-            *error_code = -1; /* Illegal argument */
+            printf("Error - illegal argument\n");
+            *error_code = -1;
             return 0;
         }
     }
@@ -564,10 +576,12 @@ int legal_arg(char *str, command_parts *command, int *error_code) {
 
 int is_comma_after_directive(char *str, int *error_code) {
     if (strchr(str, ',')) {
-        *error_code = -1; /* Comma after directive */
+        printf("Error - comma after directive\n");
+        *error_code = -1;
         return 1;
     }
-    *error_code = -1; /* Illegal data line directive */
+    printf("Error - illegal data line directive\n");
+    *error_code = -1;
     return 0;
 }
 
@@ -611,18 +625,15 @@ int add_space_after_colon(char **str, int *error_code) {
     /* Find the position of the first colon in the string */
     colon_ptr = strchr(*str, ':');
 
-    /* If no colon is found, return without making changes */
     if (!colon_ptr) {
         return 1;
     }
 
     else {
-        /* If a colon exists, add a space after the colon
-         * Check if the string is already at its maximum length */
+
         if (strlen(*str) == MAX_LINE_LENGTH) {
             char *temp_ptr = *str;
 
-            /* Reallocate memory to accommodate one more character */
             *str = realloc(*str, MAX_LINE_LENGTH + 1);
             if (*str == NULL) {
                 free(temp_ptr);
@@ -632,11 +643,11 @@ int add_space_after_colon(char **str, int *error_code) {
 
         /* Move the content after the colon by one position to add a space */
         colon_ptr = strchr(*str, ':');
-        colon_ptr++; /* Move to the character after the colon */
+        colon_ptr++;
         memmove(colon_ptr + 1, colon_ptr, strlen(colon_ptr) + 1);
-        *colon_ptr = ' '; /* Add a space after the colon */
+        *colon_ptr = ' ';
 
-        return 1; /* Successful modification or reallocation */
+        return 1;
     }
 }
 
@@ -646,7 +657,6 @@ int capture_nums(char *str, char *token_copy, inst_parts *inst, int *error_code)
     int len, number;
     len = 0;
 
-    /* Ensure a space follows any colon in the token_copy */
     if (!add_space_after_colon(&token_copy, error_code)) {
         return 0;
     }
@@ -654,7 +664,8 @@ int capture_nums(char *str, char *token_copy, inst_parts *inst, int *error_code)
     /* Extract token for numeric value validation */
     token = strtok(NULL, " \n");
     if (!is_string_legal(token)) {
-        *error_code = -1; /* Instruction '.data' line contains illegal chars or syntax error */
+        printf("Error - instruction '.data' line contains illegal chars or syntax error\n");
+        *error_code = -1;
         return 0;
     }
     strtok(token_copy, " \n");
@@ -673,11 +684,12 @@ int capture_nums(char *str, char *token_copy, inst_parts *inst, int *error_code)
             *(inst->nums + len - 1) = (short) (atoi(token));
         } else {
             if (strcmp(token, "\n") == 0) {
-                /* comma AFTER the last number */
-                *error_code = -1; /* Comma after the last number in a '.data' line */
+                printf("Error - comma after the last number in a '.data' line \n");
+                *error_code = -1;
                 return 0;
             }
-            *error_code = -1; /* Instruction '.data' line contains non-number info */
+            printf("Error - instruction '.data' line contains non-number info\n");
+            *error_code = -1;
             return 0;
         }
     }
@@ -693,14 +705,16 @@ int capture_string(char *str, inst_parts *inst, int *error_code) {
 
     /* Check for the opening double-quote */
     if (*(token = strtok(NULL, "\n")) != '"') {
-        *error_code = -1; /* There was no opening double-quote */
+        printf("Error - there was no opening double-quote\n");
+        *error_code = -1;
         return 0;
     }
     token++;
 
-    /* Check for the closing double-quote */
+
     if (strchr(token, '"') == NULL) {
-        *error_code = -1; /* There was no closing double-quote */
+        printf("Error - there was no opening double-quote\n");
+        *error_code = -1;
         return 0;
     }
     flag = 0;
@@ -715,7 +729,7 @@ int capture_string(char *str, inst_parts *inst, int *error_code) {
 
     /* Check for extra text after the end of the string */
     if (!(*(token + len + 1) == '\0' || *(token + len + 1) == '\n')) {
-        /* Extra text after the string end */
+        printf("Error - extra text after the string end\n");
         *error_code = -1;
         if (flag == 1) {
             free(inst->nums);
@@ -739,20 +753,19 @@ inst_parts *read_entry_or_extern(char *str, int *error_code) {
     ptr = strchr(str, '.');
     token = strtok(ptr, " ");
 
-    /* Allocate memory for the inst_parts structure */
     inst = handle_malloc(sizeof(inst_parts));
     if (inst == NULL) {
         *error_code = -1;
         return NULL;
     }
 
-    /* Initialize fields of the inst_parts structure */
+
     inst->label = NULL;
     inst->nums = NULL;
     inst->is_extern = 0;
     inst->len = 0;
 
-    /* Check if the token is ".extern" and set the is_extern flag */
+
     if (strcmp(token, ".extern") == 0) {
         inst->is_extern = 1;
     }
@@ -762,11 +775,13 @@ inst_parts *read_entry_or_extern(char *str, int *error_code) {
     if (legal_label(token)) {
         inst->arg_label = token;
     } else {
+        printf("Error - Token and argument are not valid");
         *error_code = -1;
     }
 
     /* Check for extra text after parsing */
     if (extra_text()) {
+        printf("Error - extra text\n");
         *error_code = -1;
     }
     return inst; /* Return the inst_parts structure */
@@ -780,12 +795,11 @@ inst_parts *read_instruction(char *str, int *error_code) {
     char token_copy[MAX_LINE_LENGTH];
     strcpy(token_copy, str);
 
-    /* Check for presence of a dot in the string */
+
     if (strstr(str, ".") == NULL) {
         return 0;
     }
 
-    /* Add a space after colon and handle error if needed */
     if (!add_space_after_colon(&str, error_code)) {
         return NULL;
     }
@@ -793,14 +807,14 @@ inst_parts *read_instruction(char *str, int *error_code) {
     /* Tokenize the string */
     token = strtok(str, " \n");
 
-    /* Allocate memory for the inst_parts structure */
+
     inst = handle_malloc(sizeof(inst_parts));
     if (inst == NULL) {
         *error_code = -1;
         return NULL;
     }
 
-    /* Initialize fields of the inst_parts structure */
+
     inst->label = NULL;
     inst->nums = NULL;
 
@@ -827,6 +841,7 @@ inst_parts *read_instruction(char *str, int *error_code) {
             inst->nums = 0;
             inst->is_extern = 0;
         } else {
+            printf("Error - token is not valid.\n");
             *error_code = -1;
             free(inst);
             return 0;
@@ -863,13 +878,13 @@ command_parts *read_command(char *str, int *error_code) {
     char *token;
     int flag_visited = 0;
 
-    /* Allocate memory for the command_parts structure */
+
     command_parts *command = handle_malloc(sizeof(command_parts));
     if (command == NULL) {
         return command;
     }
 
-    /* Add a space after colon and handle error if needed */
+
     if (!add_space_after_colon(&str, error_code))
         return command;
 
@@ -893,7 +908,7 @@ command_parts *read_command(char *str, int *error_code) {
         /* Handle arguments based on the opcode's argument count */
         if (OPCODES[command->opcode].arg_num == 0) {
             if (extra_text()) {
-                printf("Error");
+                printf("Error - extra text");
                 *error_code = -1;
             } else {
                 command->source = command->dest = NULL;

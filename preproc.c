@@ -2,12 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "Headers/preproc.h"
 
-#define as_file_ext ".as"
-#define am_file_ext ".am"
+
 #define MAX_MACRO_LENGTH 80
 #define MAX_MARCOS  200
-#define MAX_LINE_LENGTH 80
+#define MAX_LINE_LENGTH_PREPROC 81
 #define AFTER_SPACE(s) while (*s && isspace(*s)) s++
 #define WHITESPACES " \t\n\r"
 
@@ -18,27 +18,27 @@ struct Macro {
     int lineC;
 };
 
-char *strcatWithMaloc(const char *str1, const char *str2) {
-    // Calculate the length of the concatenated string
+char *strcatWithMalocPre(const char *str1, const char *str2) {
+    /* Calculate the length of the concatenated string */
     size_t len1 = strlen(str1);
     size_t len2 = strlen(str2);
-    size_t total_len = len1 + len2 + 1;  // +1 for null terminator
+    size_t total_len = len1 + len2 + 1;  /* +1 for null terminator */
 
-    // Allocate memory for the concatenated string
+    /* Allocate memory for the concatenated string */
     char *result = (char *)malloc(total_len * sizeof(char));
     if (result == NULL) {
-        // Handle memory allocation failure
+        /* Handle memory allocation failure */
         return NULL;
     }
 
-    // Copy str1 and str2 into the allocated memory
+    /* Copy str1 and str2 into the allocated memory */
     strcpy(result, str1);
     strcat(result, str2);
 
     return result;
 }
 
-struct Macro * searchMacro(struct Macro * macro_table, const int tableSize, const char *name) {
+struct Macro * searchMacroPre(struct Macro * macro_table, const int tableSize, const char *name) {
     int i;
     for(i = 0; i < tableSize; i++) {
         if(strcmp(macro_table[i].Mname, name) == 0) {
@@ -48,7 +48,7 @@ struct Macro * searchMacro(struct Macro * macro_table, const int tableSize, cons
     return NULL;
 }
 
-int macro_line(char *s, struct Macro ** mcro, struct Macro * m_table, int * m_table_size) {
+int macro_linePre(char *s, struct Macro ** mcro, struct Macro * m_table, int * m_table_size) { /* Check macro line */
     char *c1 = s, *c2;
     struct Macro *f;
     AFTER_SPACE(s);
@@ -65,10 +65,12 @@ int macro_line(char *s, struct Macro ** mcro, struct Macro * m_table, int * m_ta
 
         if(c2) *c2 = '\0';
 
-        if (searchMacro(m_table, *m_table_size, c1))
+        if (searchMacroPre(m_table, *m_table_size, c1))
             return 4;
 
-        if(c1 == "macr" || c1 == "endmacr" || c1 == "data" || c1 == "string" || c1 == "entry" || c1 == "extern")
+        if (strcmp(c1, "macr") == 0 || strcmp(c1, "endmacr") == 0 ||
+            strcmp(c1, "data") == 0 || strcmp(c1, "string") == 0 ||
+            strcmp(c1, "entry") == 0 || strcmp(c1, "extern") == 0)
             return 4;
 
 
@@ -85,7 +87,7 @@ int macro_line(char *s, struct Macro ** mcro, struct Macro * m_table, int * m_ta
             return 3;
         *c1 = '\0';
     }
-    f = searchMacro(m_table, *m_table_size, s);
+    f = searchMacroPre(m_table, *m_table_size, s);
     if(f) {
         (*mcro) = f;
         return 2;
@@ -97,8 +99,8 @@ int macro_line(char *s, struct Macro ** mcro, struct Macro * m_table, int * m_ta
 
 
 
-char * preproc(char * bname) {
-    char line[MAX_LINE_LENGTH] = {0};
+char * preProc(char * bname) { /* Main function */
+    char line[MAX_LINE_LENGTH_PREPROC] = {0};
     struct Macro macro_table[MAX_MARCOS];
     int macro_count = 0;
     int i;
@@ -106,29 +108,29 @@ char * preproc(char * bname) {
     FILE * as_file;
     FILE * am_file;
     struct Macro *macro = NULL;
-    char * asFileName = strcatWithMaloc(bname, ".as");
-    char * amFileName = strcatWithMaloc(bname, ".am");
+    char * asFileName = strcatWithMalocPre(bname, ".as");
+    char * amFileName = strcatWithMalocPre(bname, ".am");
     am_file = fopen(amFileName, "w");
     as_file = fopen(asFileName, "r");
     if(!as_file || !am_file) {
         printf("Could not open the files! check files and try again.");
         return NULL;
     }
-    while(fgets(line, MAX_LINE_LENGTH, as_file)!=0) {
-        switch (macro_line(line, &macro, &macro_table[0], &macro_count)) {
-            case 0://end of macro
+    while(fgets(line, MAX_LINE_LENGTH_PREPROC, as_file)!=0) { /* Read the file, and act according to our cases */
+        switch (macro_linePre(line, &macro, &macro_table[0], &macro_count)) {
+            case 0:/*end of macro */
                 macro = NULL;
                 break;
 
-            case 1://defining macro
+            case 1:/*defining macro */
                 break;
 
-            case 2:
+            case 2:/* printing the macros into the file */
                 for(i = 0; i < macro->lineC;i++) {
                     fputs(macro -> Mlines[i], am_file);
                 }
             macro = NULL;
-            case 3:
+            case 3:/* putting the macro into the macro table */
                 if(macro) {
                     strcpy(macro -> Mlines[macro -> lineC], line);
                     macro -> lineC++;
@@ -136,7 +138,7 @@ char * preproc(char * bname) {
                     fputs(line, am_file);
                 }
             case 4:
-                printf("ERROR");
+                printf("Error - in processing preproc");
             macro = NULL;
             break;
 

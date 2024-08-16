@@ -1,0 +1,21 @@
+# ninja log v5
+5	84	1723540209047968602	build.ninja	1279cfc41031e756
+1	3321	1723539224036196474	CMakeFiles/final.dir/front.c.o	b7f69ddb35cf81d9
+1	3329	1723539224041632946	CMakeFiles/final.dir/dataTable.c.o	a4430ad1a3d148af
+1	3332	1723539224047284249	CMakeFiles/final.dir/secondPass.c.o	658b522b62a1e966
+1	3314	1723539224028170785	CMakeFiles/final.dir/preproc.c.o	8e0f391510de033d
+1	3329	1723539224043105261	CMakeFiles/final.dir/CodCovert.c.o	a754a7f0fc9f5dc2
+9	299	1723542346748959674	CMakeFiles/final.dir/CodCovert.c.o	a754a7f0fc9f5dc2
+9	299	1723542346748447764	CMakeFiles/final.dir/secondPass.c.o	658b522b62a1e966
+9	299	1723542346749752870	CMakeFiles/final.dir/firstPass.c.o	cef718cfc0d6f092
+9	299	1723542346750446402	CMakeFiles/final.dir/assembler.c.o	1916c6e2d518ea70
+9	301	1723542346750238405	CMakeFiles/final.dir/dataTable.c.o	a4430ad1a3d148af
+8	303	1723542346754614009	CMakeFiles/final.dir/front.c.o	b7f69ddb35cf81d9
+14	3814	1723712914209617423	CMakeFiles/final.dir/secondPass.c.o	658b522b62a1e966
+13	3815	1723712914209748170	CMakeFiles/final.dir/CodCovert.c.o	a754a7f0fc9f5dc2
+13	3815	1723712914210574987	CMakeFiles/final.dir/firstPass.c.o	cef718cfc0d6f092
+13	3819	1723712914215116814	CMakeFiles/final.dir/dataTable.c.o	a4430ad1a3d148af
+12	3820	1723712914217061775	CMakeFiles/final.dir/preproc.c.o	8e0f391510de033d
+12	3827	1723712914225107699	CMakeFiles/final.dir/front.c.o	b7f69ddb35cf81d9
+3814	3847	1723712914245810165	CMakeFiles/final.dir/assembler.c.o	1916c6e2d518ea70
+3	304	1723721349459176462	CMakeFiles/final.dir/preproc.c.o	8e0f391510de033d

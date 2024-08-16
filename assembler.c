@@ -1,33 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../final/preproc.c"
-#include "../final/firstPass.c"
+
+#include "Headers/firstPass.h"
+#include "Headers/preproc.h"
 
 
 
 int main(int argc, char *argv[]) {
     char *as_file, *am_file;
     while (--argc > 0) {
-        /* Generate a new file with the ".as" extension by adding it to the input filename.*/
+        /* Generate a new file with the ".as" extension by adding it to the input filename. */
         printf("Start pre-proc\n");
         as_file = add_new_file(argv[argc], ".as");
 
-        /*Execute the macro preprocessor on the ".as" file.*/
-        if (!preproc(as_file)) {
-            /*If it failed, move to the next file.*/
-            continue;
+        if (!preProc(as_file)) {
+            printf("failure to complete the preproc function");
+
         }
 
         printf("Start first pass\n");
-        /* Generate a new file with the ".am" extension by adding it to the input filename.*/
+        /* Generate a new file with the ".am" extension by adding it to the input filename. */
         am_file = add_new_file(argv[argc], ".am");
-        /*Execute the first pass, and then the second on the ".am" file.*/
         if (exe_first_pass(am_file)) {
-            /*If it failed, move to the next file.*/
-            continue;
+            printf("Critical assembly - error");
+
         }
 
-        /*Free allocated memory*/
         free(as_file);
         free(am_file);
     }

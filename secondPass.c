@@ -1,26 +1,7 @@
 #include <stdio.h>
-#include "../final/dataTable.c"
-
-/* Function to convert an unsigned short integer to an octal string */
-char *short_to_octal(unsigned short num) {
-    char *res;
-    int size;
-
-    /* Calculate the required size of the string */
-    size = snprintf(NULL, 0, "%o", num); // Get the length of the octal representation
-
-    /* Allocate memory for the result string (+1 for the null terminator) */
-    res = (char *)malloc((size + 1) * sizeof(char));
-    if (res == NULL) {
-        perror("Memory allocation failed");
-        return NULL;
-    }
-
-    /* Format the number as an octal string */
-    snprintf(res, size + 1, "%o", num);
-
-    return res;
-}
+#include <stdlib.h>
+#include "Headers/dataTable.h"
+#include "Headers/secondPass.h"
 
 
 void free_all_memory(code_conv *code, label_address *label_table, other_table *entries, other_table *externs, \
@@ -36,13 +17,11 @@ int conv_code_octal(code_conv *code, int count, char *file_name, int IC, int DC)
     FILE *fp;
     char *ob_file_name, *octal_char;
 
-    /* Create the output file name with a '.ob' extension */
     ob_file_name = add_new_file(file_name, ".ob");
 
-    /* Open the file and handle if any error occurred */
     fp = fopen(ob_file_name, "w");
     if (fp == NULL) {
-        printf("Error - Opening file");
+        printf("Error - Opening file - ob\n");
         return 0;
     }
 
@@ -52,14 +31,14 @@ int conv_code_octal(code_conv *code, int count, char *file_name, int IC, int DC)
     /* Convert each machine code to octal and write it to the output file */
     for (i = 0; i <= count; i++) {
         octal_char = short_to_octal((code + i)->short_num);
-        fprintf(fp, "%s\n", octal_char);
+        fprintf(fp, "0%d    %s\n",IC_INIT_VALUE+i, octal_char);
         free(octal_char);
     }
 
-    /* Free Memory */
+
     free(ob_file_name);
 
-    /* Close file */
+
     fclose(fp);
 
     return 1;
@@ -72,17 +51,19 @@ int exe_second_pass(char *file_name, label_address *label_table, int IC, int DC,
 
     /* Check if the Instruction Counter (IC) exceeds the maximum value */
     if (IC > IC_MAX) {
-        printf("Too much commands");
+        printf("Too much commands\n");
         error_found = 1;
     }
 
     /* Check if each label in the label_table appears only once (no duplicate labels) */
     if (check_each_label_once(label_table, label_table_line, file_name) == 0) {
+        printf("Error - duplicates - second pass\n");
         error_found = 1;
     }
 
     /* Check if any extern label is defined in the assembly file (not allowed!) */
     if (is_extern_defined(externs, externs_count, label_table, label_table_line, file_name) == 1) {
+        printf("Error - label is defined in the assembly file (not allowed!)\n");
         error_found = 1;
     }
 
@@ -94,6 +75,7 @@ int exe_second_pass(char *file_name, label_address *label_table, int IC, int DC,
 
     /* Merge the code and data arrays into a single array */
     if (merge_code(&code, data, IC, DC) == 0) {
+        printf("Error - could not merge\n");
         error_found = 1;
     }
 
@@ -102,17 +84,17 @@ int exe_second_pass(char *file_name, label_address *label_table, int IC, int DC,
 
     /* Replace the labels in the code array with their corresponding addresses in the label_table */
     if (replace_labels(code, label_table, label_table_line, IC, file_name) == 0) {
+        printf("Error - replacing labels\n");
         error_found = 1;
     }
-    /*! print_binary_code(code,IC+DC); */
 
-    /* Convert the assembled code to base64 format and print it to the output file */
+
+    /* Convert the assembled code to octal format and print it to the output file */
     if (error_found == 0) {
         conv_code_octal(code, IC + DC, file_name, IC, DC);
 
-        /* Print the extern labels and their addresses to the '.ext' output file */
         print_externs(code, IC + DC, externs, externs_count, file_name);
-        /* Print the entry labels and their addresses to the '.ent' output file */
+
         print_entries(label_table, label_table_line, entries, entries_count, file_name);
     }
 
